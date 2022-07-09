@@ -9,14 +9,3 @@ my_day = 'Monday' # Make daytime objecs, so you can easily convert it into UTC T
 
 my_day = ['Monday', 'Tuesday', 'Wednesday', 'Thursday']
 
-
-def nownomicro():
-  ''' Returns current time, without microseconds, as required by PTV API.'''
-  return datetime.datetime.utcnow().replace(microsecond=0)
-
-def now8601():
-  ''' Returns current time, without microseconds, as required by PTV API, in 8601 format.'''
-  return nownomicro().isoformat()
-
-
-print(now8601())
