@@ -10,7 +10,7 @@ def calculateDay():
 
 def userSchedule():
 
-    userDays = {'Monday':'10:00 AM','Tuesday': '12:00 PM', 'Wednesday':'12:45 PM','Thursday':'11:00 PM', 'Friday':'9:00 AM', 'Saturday':'9:00 AM', 
+    userDays = {'Monday':'10:00 AM','Tuesday': '12:00 PM', 'Wednesday':'12:45 PM','Thursday':'11:00 PM', 'Friday':'9:00 AM', 'Saturday':'11:30 PM', 
                 'Sunday':'8:30 AM'}
 
     day_name, day_integer = calculateDay()
