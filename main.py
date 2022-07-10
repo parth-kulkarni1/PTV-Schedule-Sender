@@ -1,4 +1,3 @@
-from email import message
 import hmac
 import hashlib
 import json
@@ -21,29 +20,27 @@ def checkAPIStatusCode(requestObj):
 
 def convertLocalTimeToUTC(user_local_time):
 
-    conversion = (user_local_time[11:16])
 
-    index = 11
+    ptv_clock_reset = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month,datetime.datetime.now().day + 1, 10,0,0,0)
 
-
-    ptv_clock_utc_reset = "10:00 AM"
-    
-    if conversion == '10:00':
-        val = '00'
-
-    elif conversion > ptv_clock_utc_reset:
-        val = str(int(conversion[0:2]) - 10)
-
-        if int(val) < 10:
-            val = val.zfill(2)
-    
-    else:
-        val = str(abs(int(conversion[0:2]) - 10))
-
-        val = str(24 - int(val))
+    print(user_local_time,ptv_clock_reset)
 
     
-    return user_local_time[:index] + val + user_local_time[index + 2:]
+    if user_local_time < ptv_clock_reset:
+        g = ((user_local_time - ptv_clock_reset))
+        time_utc = (str(g).split(",")[1].strip())
+        time_utc = time_utc.split(":")
+        new_time = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, int(time_utc[0]),int(time_utc[1]),int(time_utc[2]))
+    
+    elif user_local_time >= ptv_clock_reset:
+        g = ((user_local_time - ptv_clock_reset))
+        time_utc = str(g).strip().split(":")
+        new_time = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day + 1, int(time_utc[0]), int(time_utc[1]), int(time_utc[2]))
+    
+
+    return new_time.isoformat()
+    
+
     
 def convertUTCTimeToLocal(utctime_iso):
 
@@ -158,34 +155,34 @@ def getDepeatureSequence(json_obj,get_station_info):
 
 def outputStops():
 
-    get_station_info = retriveStations_NearMe()
-    user_time = userSchedule()
+        get_station_info = retriveStations_NearMe()
+        user_time = userSchedule()
 
-    message_string = ''
+        message_string = ''
 
-    route_counter = 1
+        route_counter = 1
 
-    print(get_station_info['stop_name'])
+        print(get_station_info['stop_name'])
 
-    for i in range(len(outputDepartures())):
-        json_obj = getAPI(apiRequest='pattern/run/' + outputDepartures()[i] + '/route_type/' + get_station_info['route_type'] + '?expand=All' 
-                        + '&date_utc=' + convertLocalTimeToUTC(user_time), devIdPara='&')    
-        
-        departure_sequence = getDepeatureSequence(json_obj,get_station_info)    
+        for i in range(len(outputDepartures())):
+            json_obj = getAPI(apiRequest='pattern/run/' + outputDepartures()[i] + '/route_type/' + get_station_info['route_type'] + '?expand=All' 
+                            + '&date_utc=' + convertLocalTimeToUTC(user_time), devIdPara='&')    
+            
+            departure_sequence = getDepeatureSequence(json_obj,get_station_info)    
 
-        for j in range(departure_sequence - 1, len(json_obj['departures'])):
-            stop_id = (json_obj['departures'][j]['stop_id']) 
+            for j in range(departure_sequence - 1, len(json_obj['departures'])):
+                stop_id = (json_obj['departures'][j]['stop_id']) 
 
-            if str(json_obj['stops'][str(stop_id)]['stop_id']) == get_station_info['stop_id']:
-                message_string = message_string + '\n' + 'Route ' + str(route_counter) + ' :'
-                message_string = message_string + '\n' + '-----------'
-                route_counter +=1
+                if str(json_obj['stops'][str(stop_id)]['stop_id']) == get_station_info['stop_id']:
+                    message_string = message_string + '\n' + 'Route ' + str(route_counter) + ' :'
+                    message_string = message_string + '\n' + '-----------'
+                    route_counter +=1
 
-            message_string = message_string + '\n' + (json_obj['stops'][str(stop_id)]['stop_name'] + ': ')
-            g = convertUTCTimeToLocal(json_obj['departures'][j]['scheduled_departure_utc'])
-            message_string = message_string + (str(g) + '\n')
-        
+                message_string = message_string + '\n' + (json_obj['stops'][str(stop_id)]['stop_name'] + ': ')
+                g = convertUTCTimeToLocal(json_obj['departures'][j]['scheduled_departure_utc'])
+                message_string = message_string + (str(g) + '\n')
+                
 
-    return message_string
+        return message_string
 
-
+outputStops()

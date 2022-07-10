@@ -10,8 +10,7 @@ def calculateDay():
 
 def userSchedule():
 
-    userDays = {'Monday':'10:00 AM','Tuesday': '12:00 PM', 'Wednesday':'12:45 PM','Thursday':'11:00 PM', 'Friday':'9:00 AM', 'Saturday':'11:30 PM', 
-                'Sunday':'8:30 AM'}
+    userDays = {'Tuesday': '12:00 PM', 'Wednesday':'12:00 PM','Thursday':'8:00 AM'}
 
     day_name, day_integer = calculateDay()
 
@@ -28,12 +27,10 @@ def userSchedule():
 
                 out_time_split = out_time.split(":")
 
-
-
-                newdaytime = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month,datetime.datetime.now().day,int(out_time_split[0]), 
+                newdaytime = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month,datetime.datetime.now().day + 1,int(out_time_split[0]), 
                                             int(out_time_split[1])).replace(microsecond=0)
 
-                return newdaytime.isoformat()
+                return newdaytime
 
         raise Exception
 
