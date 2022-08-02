@@ -1,82 +1,90 @@
-import hmac
-import hashlib
+import hmac, hashlib
 import json
 import requests
 import geocoder
-import datetime
+import datetime, dateutil.parser
+import pytz
+        
 
 from my_info import my_adderess, my_bing_key, my_route_type, my_suburb     # Imports your adderess from the my_info.py file.
 from user_schedule import userSchedule
 
-def checkAPIStatusCode(requestObj):
+BASE_URL = 'http://timetableapi.ptv.vic.gov.au'
+PTV_CLOCK_RESET = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month,datetime.datetime.now().day + 1, 10,0,0,0)
+devid = 3002170
+devkey = b'130e7f10-eadb-4236-808a-05e18250e0ec'
 
-    try:
-        if requestObj.status_code != 200:
-            raise Exception
+
+class ApiFunctions:
+
+    def __init__(self, requestObj, api_string, user_local_time, utc_time_iso):
+        self.requestObj = requestObj
+        self.api_string = api_string
     
-    except:
-        print("Error has occured with query. The API error code is", requestObj.status_code)
-
-
-def convertLocalTimeToUTC(user_local_time):
-
-
-    ptv_clock_reset = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month,datetime.datetime.now().day + 1, 10,0,0,0)
-
-    print(user_local_time,ptv_clock_reset)
-
-    
-    if user_local_time < ptv_clock_reset:
-        g = ((user_local_time - ptv_clock_reset))
-        time_utc = (str(g).split(",")[1].strip())
-        time_utc = time_utc.split(":")
-        new_time = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, int(time_utc[0]),int(time_utc[1]),int(time_utc[2]))
-    
-    elif user_local_time >= ptv_clock_reset:
-        g = ((user_local_time - ptv_clock_reset))
-        time_utc = str(g).strip().split(":")
-        new_time = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day + 1, int(time_utc[0]), int(time_utc[1]), int(time_utc[2]))
+    def checkAPIStatusCode(self, requestObj):
+        try:
+            if self.requestObj.status_code != 200:
+                raise Exception
+        
+        except:
+            print("Error has occured with query. The API error code is", self.requestObj.status_code)
     
 
-    return new_time.isoformat()
-    
+    def getAPI(self, apiRequest, devIdPara = '?'):
 
-    
-def convertUTCTimeToLocal(utctime_iso):
+        updated_msg = '/v3/' + apiRequest + devIdPara + 'devid=' + str(devid)
 
-    import dateutil.parser
-    import pytz
-    
-    utctime = dateutil.parser.parse(utctime_iso)
+        sig = hmac.new(devkey, updated_msg.encode('utf-8'),hashlib.sha1).hexdigest().upper()
+        url = BASE_URL  + updated_msg + '&signature=' + sig
 
-    localtime = utctime.astimezone(pytz.timezone("Australia/Melbourne"))
+        apiContent = requests.get(url)
 
-    return localtime
+        self.checkAPIStatusCode(apiContent) # This will check whether a sucessful API call has been established.
 
+        json_obj = apiContent.json()
 
+        print(url)
 
 
-def getAPI(apiRequest, devIdPara = '?'):
-
-    devid = 3002170
-    devkey = b'130e7f10-eadb-4236-808a-05e18250e0ec'
-    baseURL = 'http://timetableapi.ptv.vic.gov.au'
-
-    updated_msg = '/v3/' + apiRequest + devIdPara + 'devid=' + str(devid)
-
-    sig = hmac.new(devkey, updated_msg.encode('utf-8'),hashlib.sha1).hexdigest().upper()
-    url = baseURL  + updated_msg + '&signature=' + sig
-
-    apiContent = requests.get(url)
-
-    checkAPIStatusCode(apiContent) # This will check whether a sucessful API call has been established.
-
-    json_obj = apiContent.json()
-
-    print(url)
+        return json_ob
 
 
-    return json_obj
+    def getDateObject(self, reset = 0, hour = 0, minutes = 0, seconds = 0):
+
+        datetime_obj = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day + reset, hour, minutes, seconds)
+
+        return datetime_obj.isoformat()
+
+    def convertLocalTimeToUTC(elsele):
+        
+        if user_local_time < PTV_CLOCK_RESET:
+            g = ((user_local_time - PTV_CLOCK_RESET))
+            time_utc = (str(g).split(",")[1].strip())
+            time_utc = time_utc.split(":")
+            new_time = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, 
+                       int(time_utc[0]),int(time_utc[1]),int(time_utc[2]))
+        
+        elif user_local_time >= PTV_CLOCK_RESET:
+            g = ((user_local_time - PTV_CLOCK_RESET))
+            time_utc = str(g).strip().split(":")
+            new_time = datetime.datetime(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day + 1, 
+                       int(time_utc[0]), int(time_utc[1]), int(time_utc[2]))
+        
+
+        return new_time.isoformat()
+        
+
+        
+    def convertUTCTimeToLocal(utctime_iso):
+
+        utctime = dateutil.parser.parse(utctime_iso)
+
+        localtime = utctime.astimezone(pytz.timezone("Australia/Melbourne"))
+
+        return localtime
+        
+
+
 
 
 def retriveStations_NearMe():
@@ -95,7 +103,7 @@ def retriveStations_NearMe():
         route_type_string = route_type_string + 'route_types=' + str(i) + '&'
 
 
-    json_obj = getAPI(apiRequest='stops/location/' + str(lattitude) + ',' + str(longititude) + '?' + route_type_string + 'max_results=' + str(max_query_returns) + '&' 
+    json_obj = ApiFunctions.getAPI(apiRequest='stops/location/' + str(lattitude) + ',' + str(longititude) + '?' + route_type_string + 'max_results=' + str(max_query_returns) + '&' 
             + 'max_distance=' + str(default_max_radius), devIdPara='&')
 
     
@@ -136,9 +144,7 @@ def outputDepartures(): # Need multipule run_ref's to be returned from this quer
     for i in range(len(json_obj['departures'])):
         if json_obj['departures'][i]['scheduled_departure_utc'] >= convertLocalTimeToUTC(user_time):
             run_refs.append(json_obj['departures'][i]['run_ref'])
-    
-    print(run_refs)
-    
+        
     return run_refs
 
 
@@ -149,11 +155,20 @@ def getDepeatureSequence(json_obj,get_station_info):
     for i in range(len(json_obj['departures'])):
         if str(json_obj['departures'][i]['stop_id']) == get_station_info['stop_id']:
             return json_obj['departures'][i]['departure_sequence'] 
-    
+
+
+
+def finishSequence(json_obj):
+
+    for i in range(len(json_obj['departures'])):
+        if str(json_obj['departures'][i]['stop_id']) == '1072':
+            return json_obj['departures'][i]['departure_sequence'] 
 
 
 
 def outputStops():
+
+    with open("journey.txt",'w') as f:
 
         get_station_info = retriveStations_NearMe()
         user_time = userSchedule()
@@ -164,13 +179,21 @@ def outputStops():
 
         print(get_station_info['stop_name'])
 
+
+
         for i in range(len(outputDepartures())):
             json_obj = getAPI(apiRequest='pattern/run/' + outputDepartures()[i] + '/route_type/' + get_station_info['route_type'] + '?expand=All' 
-                            + '&date_utc=' + convertLocalTimeToUTC(user_time), devIdPara='&')    
+                                + '&date_utc=' + convertLocalTimeToUTC(user_time), devIdPara='&')    
             
-            departure_sequence = getDepeatureSequence(json_obj,get_station_info)    
+            #print(json.dumps(json_obj, indent = 4))
+                
+            departure_sequence = getDepeatureSequence(json_obj,get_station_info)  
 
-            for j in range(departure_sequence - 1, len(json_obj['departures'])):
+            finish_sequence = finishSequence(json_obj)  
+
+            print("Finish sequence is", finish_sequence)
+
+            for j in range(departure_sequence - 1, int(finish_sequence)):
                 stop_id = (json_obj['departures'][j]['stop_id']) 
 
                 if str(json_obj['stops'][str(stop_id)]['stop_id']) == get_station_info['stop_id']:
@@ -181,7 +204,10 @@ def outputStops():
                 message_string = message_string + '\n' + (json_obj['stops'][str(stop_id)]['stop_name'] + ': ')
                 g = convertUTCTimeToLocal(json_obj['departures'][j]['scheduled_departure_utc'])
                 message_string = message_string + (str(g) + '\n')
-                
+            
+            
+        
+        f.write(message_string)
 
         return message_string
 
