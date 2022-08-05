@@ -97,7 +97,7 @@ class ApiFunctions:
         route_type_string = ''
 
         for i in my_route_type:
-            route_type_string = route_type_string + 'route_types=' + str(i) + '&'
+            route_type_string = route_type_string + 'route_types=' + str(i) + '&a'
         
 
         return route_type_string
